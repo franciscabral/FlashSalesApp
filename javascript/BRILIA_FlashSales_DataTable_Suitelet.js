@@ -1,17 +1,48 @@
 function drawFlashSalesTable(request, response) {
     var html = nlapiLoadFile('SuiteScripts/flashSales/BRILIA_FlashSales_DataTable_Suitelet.html').getValue();
-    html = html.replace('NL_DATA', getValues(getData()));
+    var rep = request.getParameter('rep');
+    html = html.replace('NL_DATA', getValues(getData(rep)));
+    var redirect = '';
+    if (!rep)
+        redirect = "$('#flashVendas tbody').on('click', 'tr', function () {\n" +
+            "var grId = $('input[type=hidden]', $(this)).val();\n" +
+            "window.location.href = '/app/site/hosting/scriptlet.nl?script=310&deploy=1&rep=' + grId;\n" +
+            "});";
+    html = html.replace('NL_REDIRECT', redirect)
     response.write(html);
 }
 
-function getData() {
-    var sales = nlapiSearchRecord('transaction', 'customsearch_flashsalesgross');
-    var goals = nlapiSearchRecord('customrecord_bri_partnerquota', 'customsearch_flahsalesquotaregmanager');
-    var bonification = nlapiSearchRecord('transaction', 'customsearch_flashsalesbonification');
-    var cmv = nlapiSearchRecord('transaction', 'customsearch_flashsalescmv');
-    var tax = nlapiSearchRecord('customrecord_enl_taxtrans', 'customsearch_flashsalestax');
-    var avgPrice = nlapiSearchRecord('transaction', 'customsearch_flashsalesavgprice');
-    //var customers = nlapiSearchRecord('transaction', 'customsearch_flashsalescustomers')
+function getData(rep) {
+
+    var sales, goals, bonification, cmv, tax, avgPrice, customers, newCustomers, devolution;
+
+    if (!rep) {
+        var sales = nlapiSearchRecord('transaction', 'customsearch_flashsalesgross');
+        var goals = nlapiSearchRecord('customrecord_bri_partnerquota', 'customsearch_flahsalesquotaregmanager');
+        var bonification = nlapiSearchRecord('transaction', 'customsearch_flashsalesbonification');
+        var cmv = nlapiSearchRecord('transaction', 'customsearch_flashsalescmv');
+        var tax = nlapiSearchRecord('customrecord_enl_taxtrans', 'customsearch_flashsalestax');
+        var avgPrice = nlapiSearchRecord('transaction', 'customsearch_flashsalesavgprice');
+        var customers = nlapiSearchRecord('customer', 'customsearch_flashsalescustomers');
+        var newCustomers = nlapiSearchRecord('customer', 'customsearch_flashsalesnewcustomers');
+        var devolution = nlapiSearchRecord('transaction', 'customsearch_flashsalesdevolution');
+    } else {
+        var criteria = new nlobjSearchFilter('formulatext', null, 'is', rep);
+        criteria.setFormula('{partner.custentity_bri_supervisor}');
+        var criteriaGoal = new nlobjSearchFilter('formulatext', null, 'is', rep);
+        criteriaGoal.setFormula('{custrecord_partner.custentity_bri_supervisor}');        
+
+        var sales = nlapiSearchRecord('transaction', 'customsearch_flashsalesgross_rep', criteria);
+        var goals = nlapiSearchRecord('customrecord_bri_partnerquota', 'customsearch_flahsalesquotaregmanager_re', criteriaGoal);
+        var bonification = nlapiSearchRecord('transaction', 'customsearch_flashsalesbonification_rep', criteria);
+        var cmv = nlapiSearchRecord('transaction', 'customsearch_flashsalescmv_rep', criteria);
+        var tax = nlapiSearchRecord('customrecord_enl_taxtrans', 'customsearch_flashsalestax_rep');
+        var avgPrice = nlapiSearchRecord('transaction', 'customsearch_flashsalesavgprice_rep', criteria);
+        var customers = nlapiSearchRecord('customer', 'customsearch_flashsalescustomers_rep', criteria);
+        var newCustomers = nlapiSearchRecord('customer', 'customsearch_flashsalesnewcustomers_rep', criteria);
+        var devolution = nlapiSearchRecord('transaction', 'customsearch_flashsalesdevolution_rep', criteria);
+
+    }
 
 
     var personas = [];
@@ -36,49 +67,69 @@ function getData() {
         })
     }, this);
 
-    goals.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].goal = element.getValue(recCollumns[1]);
-    }, this);
+    if (goals)
+        goals.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].goal = element.getValue(recCollumns[1]);
+        }, this);
 
-    bonification.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].bonification = element.getValue(recCollumns[1]);
-    }, this);
+    if (bonification)
+        bonification.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].bonification = element.getValue(recCollumns[1]);
+        }, this);
 
-    cmv.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].cmv = element.getValue(recCollumns[1]);
-    }, this);
+    if (cmv)
+        cmv.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].cmv = element.getValue(recCollumns[1]);
+        }, this);
 
-    tax.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].tax = element.getValue(recCollumns[1]);
-    }, this);
+    if (tax)
+        tax.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].tax = element.getValue(recCollumns[1]);
+        }, this);
 
-    avgPrice.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].averagePrice = element.getValue(recCollumns[1]);
-    }, this);
+    if (avgPrice)
+        avgPrice.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].averagePrice = element.getValue(recCollumns[1]);
+        }, this);
 
-    /*customers.forEach(function (element) {
-        var recCollumns = element.getAllColumns();
-        var idx = getIndexById(element.getValue(recCollumns[0]), personas);
-        if (idx >= 0)
-            personas[idx].customers = element.getValue(recCollumns[1]);
-    }, this);*/
+    if (customers)
+        customers.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].customers = element.getValue(recCollumns[1]);
+        }, this);
 
+    if (newCustomers)
+        newCustomers.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].customersNew = element.getValue(recCollumns[1]);
+        }, this);
 
+    if (devolution)
+        devolution.forEach(function (element) {
+            var recCollumns = element.getAllColumns();
+            var idx = getIndexById(element.getValue(recCollumns[0]), personas);
+            if (idx >= 0)
+                personas[idx].devolution = element.getValue(recCollumns[1]);
+        }, this);
 
     return personas;
 }
@@ -132,7 +183,7 @@ function getValues(personas) {
         if (values)
             values += ',';
         values += drawLine([
-            persona.name + hiddenField(persona.id), //Gerente Regional
+            persona.name + hiddenField(persona.name), //Gerente Regional
             toPercent(persona.goal / total.goal), //SOS Meta
             toBold(toPercent(persona.sales / total.sales, true, ((persona.goal / total.goal) * 100) - 1, ((persona.goal / total.goal) * 100) + 1)), //SOS Real
             toCurrency(MTDGoal), //Meta MTD
@@ -153,7 +204,7 @@ function getValues(personas) {
             persona.customersNew, //Clientes Novos
             toCurrency(persona.bonificationGoal), //Bonificação Meta
             toCurrency(persona.bonification), //Bonificação Real
-            persona.devolutionGoal,
+            toCurrency(persona.devolutionGoal),
             toCurrency(persona.devolution)
         ]);
     }, this);
@@ -184,7 +235,7 @@ function getValues(personas) {
         toBold(total.customersNew), //Clientes Novos
         toBold(toCurrency(total.bonificationGoal)), //Bonificação Meta
         toBold(toCurrency(total.bonification)), //Bonificação Real
-        toBold(total.devolutionGoal),
+        toBold(toCurrency(total.devolutionGoal)),
         toBold(toCurrency(total.devolution))
     ]);
     return values;

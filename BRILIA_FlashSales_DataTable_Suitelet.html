@@ -13,11 +13,7 @@
             "paging": false,
             "info": false
         } );
-
-        $('#flashVendas tbody').on('click', 'tr', function () {        
-            var grId = $('input[type=hidden]', $(this)).val()
-            window.location.href = '/app/site/hosting/scriptlet.nl?script=304&deploy=1' + '&v=' + grId;
-        } );
+        $('#flashVendas tbody').on('click', 'tr', NL_REDIRECT );
     } );
     </script>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css">
